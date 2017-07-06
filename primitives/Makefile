@@ -84,7 +84,7 @@ CDECKS= \
          arc4.c		 md5.c            fool_optimizer.c\
          crc16_.c         crc24_.c         crc32_.c        crc_16_24_32.c \
          register_dl_routines.c           DlInterface.c    new_second.c cpu_type.c get_endian.c \
-	 plugin_code.c
+	 plugin_code.c capture_signaux.c test_capture_signaux.c
 
 FDECKS= \
          constnt.f       exdb.f \
@@ -92,7 +92,7 @@ FDECKS= \
          qqqmima.f \
          up2low.f\
          qqqcall.f       qqqr8sz.f          qvmcks.f      gnthread.f  ccard_arg_m.f90 \
-         non_preempt_clock.f  f_logical2int.f90
+         non_preempt_clock.f  f_logical2int.f90 mod_signaux.f90 test_capture_signauxf.f90
 
 OBJECTS= \
          c_baseio.o        c_ccard.o        constnt.o         dmms.o \
@@ -118,9 +118,10 @@ OBJECTS= \
          ftn_prog_args.o  crc16_.o           crc24_.o         crc32_.o\
          crc_16_24_32.o    dlfcn.o   register_dl_routines.o    DlInterface.o\
          msg.o             new_second.o cpu_type.o get_endian.o \
-	 plugin_code.o
+	 plugin_code.o capture_signaux.o test_capture_signaux.o mod_signaux.o \
+         test_capture_signauxf.o
          
-COMDECKS = xxpakc.cdk mgi.h  wafile.h
+COMDECKS = xxpakc.cdk mgi.h  wafile.h capture_signaux.h
          
 FICHIERS = $(FTNDECKS) $(FDECKS) $(CDECKS) $(COMDECKS)
 
@@ -140,6 +141,7 @@ stkmem.o: 	stkmem.F
 tracebck.o: 	tracebck.F 
 ccard.o:        ccard.F
 sx_timing_stubs.o:sx_timing_stubs.F
+capture_signaux.o: capture_signaux.h
 
 tarball: $(FICHIERS) rmnlib_v
 	tar cfzv /data/armnraid1/www/ssm/sources/primitives_$(TARRLS)_all.tgz $(FICHIERS) rmnlib_version.f Makefile 
@@ -175,7 +177,7 @@ locallib: gen_ec_arch_dir \
          $(TEMPLIB)(fool_optimizer.o)  $(TEMPLIB)(ftn_prog_args.o)  $(TEMPLIB)(crc16_.o)          $(TEMPLIB)(crc24_.o)\
          $(TEMPLIB)(crc32_.o)          $(TEMPLIB)(crc_16_24_32.o)   $(TEMPLIB)(dlfcn.o)           $(TEMPLIB)(DlInterface.o)\
          $(TEMPLIB)(register_dl_routines.o) $(TEMPLIB)(msg.o)       $(TEMPLIB)(new_second.o)      $(TEMPLIB)(cpu_type.o)\
-         $(TEMPLIB)(get_endian.o)      $(TEMPLIB)(plugin_code.o)
+         $(TEMPLIB)(get_endian.o)      $(TEMPLIB)(plugin_code.o)    $(TEMPLIB)(capture_signaux.o) $(TEMPLIB)(mod_signaux.o)
 
 genlib: rmnlib_v $(OBJECTS)
 #Creer ou mettre a jour la programmatheque 

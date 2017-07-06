@@ -443,7 +443,7 @@ int  compact_rle( void *unpackedArrayOfInt, void *packedHeader, void *packedArra
   else
   {
     printf("\n opCode:%d is not defined \n", opCode);
-    return NULL;
+    return 0;
   };/* if */
  
   
