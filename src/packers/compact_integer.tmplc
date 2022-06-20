@@ -1,0 +1,243 @@
+//! Find the minimum and maximum values in an array
+static void CAT(findMinMax_,TYPE)(
+    //! [in] Array in which to find the min and max
+    const TYPE * const arr,
+    //! [in] Number of elements in the array
+    const int nbElems,
+    //! [in] Stride between each array element
+    const int stride,
+    //! [out] Minimum value in the array
+    TYPE * const min,
+    //! [out] Maximum value in the array
+    TYPE * const max
+) {
+    *min = arr[0];
+    *max = arr[0];
+
+    for(int i = stride; i < nbElems * stride; i += stride) {
+        if ( arr[i] < *min ) {
+            *min = arr[i];
+        } else if ( arr[i] > *max ) {
+            *max = arr[i];
+        }
+    }
+}
+
+
+//! Stuff 32 bits word into array
+static void pack32Bit(
+    uint32_t * packed,
+    //! [in] Unpacked array
+    const TYPE * unpacked,
+    //! [in] Number of elements in unpacked array
+    const int nbElems,
+    //! [in] Stride between each array element
+    const int stride
+    //! [in] Minimum/bias to substract before packing
+    const TYPE min,
+    //! [in] Shift to apply before packing
+    const int shift,
+    //! [in] Mask
+    const TYPE positiveMask
+) {
+    if (packHeader != NULL) {
+        for (int i = 0; i < nbElems; i++) {
+            *packed = (*unpacked - min) >> shift;
+            packed++;
+            unpacked += stride;
+        }
+    } else {
+        for (int i = 0; i < nbElems; i++) {
+            *packed = *unpacked + positiveMask;
+            packed++;
+            unpacked += stride;
+        }
+    }
+}
+
+
+//! Stuff a chain of word (< 32 bits) into an array
+static void packBit(
+    //! [out] Packed array
+    uint32_t * packed,
+    //! [in] Array of elements to pack
+    const TYPE * const unpacked,
+    //! [in] Number of elements in unpacked array
+    const int nbElems,
+    //! [in] Stride between each array element
+    const int stride
+    //! [in] Minimum/bias to substract before packing
+    const TYPE min,
+    //! [in] Shift to apply before packing
+    const int shift,
+    //! [in] Mask to apply before packing
+    const int cleanupMask,
+    bitSizeOfPackedToken,
+    lastWordShifted,
+    spaceInLastWord
+) {
+    uint32_t token;
+
+    if (packHeader !=NULL) {
+        for (int i = 0; i < nbElems * stride; i += stride) {
+            token = ((unpacked[i] - min ) >> shift);
+            token &= cleanupMask;
+            stuff(token, packed, wordSize, bitSizeOfPackedToken, lastWordShifted, spaceInLastWord);
+        }
+    } else {
+        for (int i = 0; i < nbElems * stride; i += stride) {
+            token = unpacked[i] + positiveMask;
+            token &= cleanupMask;
+            stuff(token, packed, wordSize, bitSizeOfPackedToken, lastWordShifted, spaceInLastWord);
+        }
+    }
+}
+
+/*********************************************************************
+ *                                                                   *
+ *  Objective : pack a chain of word into an array                   *
+ *                                                                   *
+ *  Argument  :                                                      *
+ *   IN   unpacked       integer array                        *
+ *   IN   min                   minimun integer                      *
+ *                                                                   *
+ ********************************************************************/
+//! Pack words into array
+static int Pack(
+    unpacked,
+    uint32_t * packed
+    min
+    wordSize
+    offset
+) {
+    int spaceInLastWord =  wordSize - ( offset % wordSize );
+    int lastSlot = ( offset / wordSize );
+
+    uint32_t lastWordShifted;
+    if ( spaceInLastWord == wordSize ) {
+        lastWordShifted = 0;
+    } else {
+        lastWordShifted = arrayOfPacked[lastSlot] >> spaceInLastWord;
+    }
+
+    packed = &arrayOfPacked[lastSlot];
+    if ( ( spaceInLastWord == wordSize ) && ( bitSizeOfPackedToken == wordSize ) ) {
+        pack32Bit(unpacked, min);
+    } else {
+        packBit(unpacked, min);
+    }
+
+    // squeezes hole left in the integer array
+    if ( spaceInLastWord < wordSize ) {
+        *packed = ( lastWordShifted << spaceInLastWord) | ( *packed & ~(-1 << spaceInLastWord));
+    }
+
+    return bitSizeOfPackedToken;
+}
+
+/*******************************************************************
+ *                                                                 *
+ *  Objective : construct pack header                              *
+ *                                                                 *
+ *  Argument  :                                                    *
+ *    IN     unpacked        integer array                  *
+ *    IN     min                    mininum integer                *
+ *    IN     max                    maximum integer                *
+ *                                                                 *
+ ******************************************************************/
+void constructHeader(
+    uint32_t * unpacked,
+    uint32_t min,
+    uint32_t max
+) {
+    uint32_t tempUnsignedMax;
+    uint32_t tempUnsignedMin;
+
+    // obtain min, max & range
+    findMinMax(unpacked, min, max);
+    uint32_t maxRange;
+    if ( (max > 0) && (min < 0) ) {
+        // prevent signed overflow
+        tempUnsignedMax = max;
+        tempUnsignedMin = -min;
+        maxRange = tempUnsignedMax + tempUnsignedMin;
+    } else {
+        maxRange = max - min;
+    }
+
+    // Compute required shift
+    int bitRequiredForRange = 0;
+    while ( maxRange != 0 ) {
+        maxRange = maxRange >> 1;
+        bitRequiredForRange++;
+    }
+
+    int shift = 0;
+    if ( bitSizeOfPackedToken == -1 ) {
+        bitSizeOfPackedToken = bitRequiredForRange;
+    } else {
+        while ( (bitRequiredForRange - bitSizeOfPackedToken) > 0 ) {
+            shift++;
+            bitRequiredForRange--;
+        }
+    }
+
+   // construct pack header
+   packHeader[0] = 0xFD000000 | (shift << 6) | bitSizeOfPackedToken;
+   packHeader[1] = nbElems;
+   packHeader[2] = min;
+   packHeader[3] = max;
+}
+
+
+//! Unpack integers
+static void unpack(
+    //! [out] Unpacked integer array
+    uint32_t * const unpacked,
+    //! [in] Packed integer array
+    const uint32_t * const packed
+    //! [in] Number of bits to shift
+    const int shift,
+    //! [in] Token size in bits
+    const int tokenSize,
+    //! Minimum integer value
+    const uint32_t min,
+    //! [in] Number of elements in the packed array
+    const int nbElems,
+    //! [in] First bit of the integer packed inside array
+    const int offset,
+    //! [in] Substracted from unpacked int
+    const int32_t positiveMask
+) {
+    const int bitPackInFirstWord =  wordSize - ( offset % wordSize );
+    const int currentSlot = ( offset / wordSize );
+    const uint32_t currentWord = packed[currentSlot] << ( wordSize - bitPackInFirstWord );
+
+    int significantBit = ( tokenSize > wordSize ) ? wordSize : tokenSize;
+    int inSignificantBit = ( tokenSize > wordSize ) ? tokenSize - wordSize : 0;
+
+    uint32_t * arrayPtr = &packed[currentSlot];
+    uint32_t unpackedToken;
+    if ( packHeader != NULL ) {
+        for (int i = 0; i < nbElems * stride; i += stride) {
+            extract(unpackedToken, arrayPtr, wordSize, significantBit, currentWord, bitPackInFirstWord);
+
+            // truncate extra bit
+            if ( inSignificantBit > 0 ) {
+                discard(arrayPtr, wordSize, inSignificantBit, currentWord, bitPackInFirstWord);
+            }
+            unpacked[i] =  (unpackedToken << shift ) + min;
+        }
+    } else {
+        for (int i = 0; i < nbElems * stride; i += stride) {
+            extract(unpackedToken, arrayPtr, wordSize, significantBit, currentWord, bitPackInFirstWord);
+
+            // truncate extra bit if necessary
+            if ( inSignificantBit > 0 ) {
+                discard(arrayPtr, wordSize, inSignificantBit, currentWord, bitPackInFirstWord);
+            }
+
+            unpacked[i] = unpackedToken - positiveMask;
+        }
+    }
+}

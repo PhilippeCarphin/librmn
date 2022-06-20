@@ -1,20 +1,21 @@
 #ifndef ARMN_COMPRESS_H
 #define ARMN_COMPRESS_H
 
-typedef void *(*PackFunctionPointer)(
+typedef void * (*PackFunctionPointer)(
     void *unpackedArrayOfFloat,
     void *packedHeader,
     void *packedArrayOfInt,
-    int elementCount,
-    int bitSizeOfPackedToken,
-    int off_set,
-    int stride,
-    int opCode,
-    int hasMissing,
-    void *missingTag
+    const int elementCount,
+    const int bitSizeOfPackedToken,
+    const int off_set,
+    const int stride,
+    const int opCode,
+    const int hasMissing,
+    const void * const missingTag
 );
 
-int armn_compress(unsigned char *fld, int ni, int nj, int nk, int nbits, int op_code);
+void c_armn_compress_setswap(int swapState);
+int armn_compress(unsigned char * fld, int ni, int nj, int nk, int nbits, int op_code);
 
 int compact_integer(
     void *unpackedArrayOfInt,
@@ -27,7 +28,7 @@ int compact_integer(
     int opCode
 );
 
-void *compact_float(
+void * compact_float(
     void *unpackedArrayOfFloat,
     void *packedHeader,
     void *packedArrayOfInt,
@@ -40,7 +41,7 @@ void *compact_float(
     const void * const missingTag
 );
 
-void *compact_double(
+void * compact_double(
     void *unpackedArrayOfFloat,
     void *packedHeader,
     void *packedArrayOfInt,

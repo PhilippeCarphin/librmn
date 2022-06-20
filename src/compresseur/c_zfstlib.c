@@ -36,7 +36,6 @@ void packTokensSample(unsigned int z[], int *zlng, unsigned int zc[], int nicoar
 static void unpackTokensSample(unsigned int zc[], int diffs[], unsigned int z[], int nicoarse, int njcoarse,  int ni, int nj, int nbits, int step, uint32_t *header, int start);
 void c_armn_compress_setlevel(int level);
 int c_armn_compress_getlevel();
-void c_armn_compress_setswap(int swapState);
 int  c_armn_compress_getswap();
 void c_armn_compress_option(char *option, char *value);
 void c_fstzip(unsigned int *zfld, int *zlng, unsigned int *fld, int ni, int nj, int code_methode, int degre, int step, int nbits, int bzip);

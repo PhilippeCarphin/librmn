@@ -31,11 +31,11 @@ static int powerOf2sInitialized = 0;
 
 typedef struct {
 #if defined(Little_Endian)
-    uint32_t RESERVED :16,RLE_TYP :4,LNG :4,ID :8,numOfPackedToken :26,numOfBitsPerToken :6;
+    uint32_t reserved : 16, relTyp : 4, lng : 4, id : 8, numOfPackedToken : 26, numOfBitsPerToken : 6;
 #else
-    uint32_t ID :8,LNG :4,RLE_TYP :4,RESERVED :16,numOfBitsPerToken :6,numOfPackedToken :26;
+    uint32_t id : 8, lng : 4, relTyp : 4, reserved : 16, numOfBitsPerToken : 6, numOfPackedToken : 26;
 #endif
-    uint32_t minInteger :32,maxRange :32;
+    uint32_t minInteger :32, maxRange :32;
 } rle_header;
 
 

@@ -43,99 +43,100 @@ typedef union {
 } ALL_FLOAT;
 
 
-/*****************************************************************************
- *                                                                           *
- *  Objective : extract a token from a stream of packed token                *
- *  Arguments :                                                              *
- *      OUT     packedToken           token extracted                        *
- *   IN/OUT     packedWordPtr         pointer to the token to be extracted   *
- *   IN         wordSize              size of a word                         *
- *   IN         bitSizeOfPackedToken  size of a token in bit                 *
- *   IN/OUT     packedWord            word holding the desired token         *
- *   IN/OUT     bitPackInWord         no. of bits remained packed            *
- *                                    in the packedWord                      * 
- *                                                                           *
- ****************************************************************************/
-#define extract( packedToken, packedWordPtr, wordSize, bitSizeOfPackedToken, packedWord, bitPackInWord) {\
-    /* Obtain the integer representation */\
-    if (  bitPackInWord >= bitSizeOfPackedToken ) {\
-        packedToken = (packedWord >> ( wordSize - bitSizeOfPackedToken ) );\
-        packedWord <<= bitSizeOfPackedToken;\
-        bitPackInWord -= bitSizeOfPackedToken;\
-    } else {\
-        packedToken = (packedWord >> ( wordSize - bitSizeOfPackedToken ));\
-        packedWordPtr++;\
-        packedWord = *packedWordPtr;\
-        packedToken |= ( packedWord >> ( wordSize - (bitSizeOfPackedToken-bitPackInWord)));\
-        packedWord <<= ( bitSizeOfPackedToken - bitPackInWord );\
-        bitPackInWord = wordSize - (bitSizeOfPackedToken - bitPackInWord);\
-    };\
-    /* Special case */\
-    if ( bitPackInWord == 0 ) {\
-        packedWordPtr++;\
-        packedWord = *packedWordPtr;\
-        bitPackInWord = wordSize;\
-    };\
-}\
+//! Extract a token from a steam of packed tokens
+inline void extract(
+    //! [out] Extracted token
+    uint32_t * const unpackedToken,
+    //! [in,out] Pointer to the token to extract
+    const uint32_t ** packedWordPtr,
+    //! [in] Word size in bits
+    const int wordSize,
+    //! [in] Packed token size in bits
+    const int bitSizeOfPackedToken,
+    //! [in,out] Word holding the desired token
+    uint32_t * packedWord,
+    //! [in,out] Number of packed bits remaining packedWord
+    int * const bitPackInWord
+) {
+    if ( *bitPackInWord >= bitSizeOfPackedToken ) {
+        *unpackedToken = (packedWord >> ( wordSize - bitSizeOfPackedToken ) );
+        packedWord <<= bitSizeOfPackedToken;
+        *bitPackInWord -= bitSizeOfPackedToken;
+    } else {
+        *unpackedToken = (packedWord >> ( wordSize - bitSizeOfPackedToken ));
+        (*packedWordPtr)++;
+        packedWord = **packedWordPtr;
+        *unpackedToken |= ( packedWord >> ( wordSize - (bitSizeOfPackedToken - *bitPackInWord)));
+        packedWord <<= ( bitSizeOfPackedToken - *bitPackInWord );
+        bitPackInWord = wordSize - (bitSizeOfPackedToken - *bitPackInWord);
+    }
+    if ( bitPackInWord == 0 ) {
+        // Special case
+        (*packedWordPtr)++;
+        packedWord = *packedWordPtr;
+        *bitPackInWord = wordSize;
+    }
+}
 
 
-/*****************************************************************************
- *                                                                           *
- *  Objective : discard unwanted bits                                        *
- *  Arguments :                                                              *
- *   IN/OUT     packedWordPtr         pointer to the token to be extracted   *
- *   IN         wordSize              size of a word                         *
- *   IN         discardBit            bit to be discarded                    *
- *   IN/OUT     packedWord            word holding the desired token         *
- *   IN/OUT     bitPackInWord         no. of bits remained packed            *
- *                                    in the packedWord                      * 
- *                                                                           *
- ****************************************************************************/
-#define discard(packedWordPtr, wordSize, discardBit, packedWord, bitPackInWord) {\
-    if ( bitPackInWord > discardBit ) {\
-        packedWord <<= discardBit;\
-        bitPackInWord -= discardBit;\
-    } else {\
-        packedWordPtr++;\
-        packedWord = *packedWordPtr;\
-        packedWord <<= ( discardBit - bitPackInWord);\
-        bitPackInWord = wordSize - ( discardBit - bitPackInWord );\
-    };\
-    /* Special case */\
-    if ( bitPackInWord == 0 ) {\
-        packedWordPtr++;\
-        packedWord = *packedWordPtr;\
-        bitPackInWord = wordSize;\
-    };\
-}\
+//! Discard unwanted bits
+inline void discard(
+    //! [in,out] Pointer to the token to extract
+    uint32_t ** packedWordPtr,
+    //! [in] Word size in bits
+    const int wordSize,
+    //! [in] Bits to discard
+    const int discardBit,
+    //! [out] Word holding the desired token
+    uint32_t * const packedWord,
+    //! [in,out] Number of packed bits remaining packedWord
+    int * const bitPackInWord
+) {
+    if ( *bitPackInWord > discardBit ) {
+        *packedWord <<= discardBit;
+        *bitPackInWord -= discardBit;
+    } else {
+        (*packedWordPtr)++;
+        *packedWord = **packedWordPtr;
+        *packedWord <<= (discardBit - *bitPackInWord);
+        *bitPackInWord = wordSize - (discardBit - *bitPackInWord);
+    }
+    if ( *bitPackInWord == 0 ) {
+        // Special case
+        (*packedWordPtr)++;
+        *packedWord = **packedWordPtr;
+        *bitPackInWord = wordSize;
+    }
+}
 
 
-/*************************************************************************************
- *                                                                                   *
- *  Objective : pack a token into a stream of packed token                           *
- *  Arguments :                                                                      *
- *   IN         token                 token to be packed                             *
- *   IN/OUT     availableWordPtr      pointer to the word position available for     *
- *                                    packing                                        *
- *   IN         wordSize              size of a word                                 *
- *   IN         bitSizeOfPackedToken  bit size of the token                          *
- *   IN/OUT     lastWordShifted       word designated to hold the token              *
- *   IN/OUT     spaceInLastWord       no. of bits available for packing in last word *
- *                                                                                   *
- ************************************************************************************/
-#define stuff(token, availableWordPtr, wordSize, bitSizeOfPackedToken, lastWordShifted, spaceInLastWord) {\
-    if ( spaceInLastWord >= bitSizeOfPackedToken ) {\
-        /* integer token fits into space left */\
-        lastWordShifted = ( lastWordShifted << bitSizeOfPackedToken ) | token;\
-        spaceInLastWord = spaceInLastWord - bitSizeOfPackedToken;\
-    } else {\
-        /* integer token can not fit into space left */\
-        *availableWordPtr = ((lastWordShifted << spaceInLastWord) | ( token >> ( bitSizeOfPackedToken - spaceInLastWord)));\
-        lastWordShifted = token & ( -1 >> ( wordSize - ( bitSizeOfPackedToken - spaceInLastWord)));\
-        spaceInLastWord = wordSize - ( bitSizeOfPackedToken - spaceInLastWord );\
-        availableWordPtr++;\
-        lastSlot++;\
-    };\
-}\
+//! Packe a token in a steam of packed tokens
+inline void stuff(
+    //! [in] Token to pack
+    const unit32_t token,
+    //! [out] Pointer to the word position available for packing
+    uint32_t ** availableWordPtr,
+    //! [in] Word size in bits
+    const int wordSize,
+    //! [in] Size of the token in bits
+    const int bitSizeOfPackedToken,
+    //! [in,out] Word to hold the token
+    uint32_t * const lastWordShifted,
+    //! [in,out] Number of bits available for packing in the last word
+    uint32_t * const spaceInLastWord
+) {
+    if ( *spaceInLastWord >= bitSizeOfPackedToken ) {
+        // integer token fits into space left
+        *lastWordShifted = ( *lastWordShifted << bitSizeOfPackedToken ) | token;
+        *spaceInLastWord = *spaceInLastWord - bitSizeOfPackedToken;
+    } else {
+        // integer token can not fit into space left
+        **availableWordPtr = ((*lastWordShifted << *spaceInLastWord) | ( token >> ( bitSizeOfPackedToken - *spaceInLastWord)));
+        *lastWordShifted = token & ( -1 >> ( wordSize - ( bitSizeOfPackedToken - *spaceInLastWord)));
+        *spaceInLastWord = wordSize - ( bitSizeOfPackedToken - *spaceInLastWord );
+        (*availableWordPtr)++;
+        lastSlot++;
+    }
+}
 
 #endif
