@@ -114,13 +114,15 @@ add_custom_target(WhiteBoardFortranHeader DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/in
 
 string(REGEX MATCH "([0-9]+)" SOVERSION ${PROJECT_VERSION})
 
+find_package(rsfiles REQUIRED)
+
 add_library(rmn STATIC ${PROJECT_C_FILES} ${PROJECT_F_FILES})
 set_target_properties(rmn PROPERTIES
     VERSION ${PROJECT_VERSION}
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
     POSITION_INDEPENDENT_CODE ON
     OUTPUT_NAME rmn)
-target_link_libraries(rmn PUBLIC App)
+target_link_libraries(rmn PUBLIC App rsfiles)
 
 add_library(rmnshared SHARED ${PROJECT_C_FILES} ${PROJECT_F_FILES})
 set_target_properties(rmnshared PROPERTIES
@@ -129,7 +131,7 @@ set_target_properties(rmnshared PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     SOVERSION ${SOVERSION}
     OUTPUT_NAME rmn)
-target_link_libraries(rmnshared PUBLIC App)
+target_link_libraries(rmnshared PUBLIC App rsfiles)
 
 # Required to prevent missing Fortran modules when building in parallel
 # (make -j) with GNU compilers
@@ -191,6 +193,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${PROJECT_NAME}_${PROJECT_VERSION}.
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/rmn_jar.mod
     ${CMAKE_CURRENT_BINARY_DIR}/rmn_gmm.mod
+    ${CMAKE_CURRENT_BINARY_DIR}/rmn_fst.mod
     DESTINATION include)
 
 file(GLOB PROJECT_INCLUDE_FILES src/PUBLIC_INCLUDES/rmn/*)
