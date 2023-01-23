@@ -12,6 +12,7 @@ typedef struct {
     unsigned int
         stream:1,
         std:1,
+        rsf:1,
         burp:1,
         rnd:1,
         wa:1,

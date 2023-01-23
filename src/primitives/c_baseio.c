@@ -158,6 +158,7 @@ static void dump_file_entry(
               FGFDT[idx].open_flag?"OPEN":"",
               FGFDT[idx].attr.stream?"+STREAM":"",
               FGFDT[idx].attr.std?"+STD":"",
+              FGFDT[idx].attr.rsf?"+RSF":"",
               FGFDT[idx].attr.burp?"+BURP":"",
               FGFDT[idx].attr.rnd?"+RND":"+SEQ",
               FGFDT[idx].attr.wa?"+WA":"",
@@ -200,6 +201,7 @@ static void reset_file_entry(
     FGFDT[idx].open_flag      = 0;
     FGFDT[idx].attr.stream    = 0;
     FGFDT[idx].attr.std       = 0;
+    FGFDT[idx].attr.rsf       = 0;
     FGFDT[idx].attr.burp      = 0;
     FGFDT[idx].attr.rnd       = 0;
     FGFDT[idx].attr.wa        = 0;
@@ -389,6 +391,7 @@ int c_fnom(
     strncpy(FGFDT[entry].file_type, type, lngt);
     FGFDT[entry].attr.stream = 0;
     FGFDT[entry].attr.std = 0;
+    FGFDT[entry].attr.rsf = 0;
     FGFDT[entry].attr.burp = 0;
     FGFDT[entry].attr.rnd = 0;
     FGFDT[entry].attr.wa = 0;

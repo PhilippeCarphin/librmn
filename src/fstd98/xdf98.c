@@ -3093,21 +3093,6 @@ int file_index(
 }
 
 
-//! Find index position in master file table (fnom file table).
-//! \return Index of the provided unit number in the file table or -1 if not found.
-int fnom_index(
-    //! [in] Unit number associated to the file
-    const int iun
-) {
-    for (int i = 0; i < MAXFILES; i++) {
-        if (FGFDT[i].iun == iun) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-
 //! Find a free position in file table and initialize file attributes.
 //! \return Free position index or error code
 static int get_free_index()

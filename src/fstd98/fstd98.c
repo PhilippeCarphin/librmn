@@ -46,6 +46,7 @@
 #include "qstdir.h"
 #include <rmn/convert_ip.h>
 #include "xdf98.h"
+#include <rsf/rsf.h>
 
 #define Max_Ipvals 50
 
@@ -94,6 +95,8 @@ static regex_t pattern;
 
 static int turbocomp_mode = 0;
 static char *comptab[2] = {"FAST", "BEST"};
+
+static RSF_handle rsf_handles[MAXFILES];
 
 int FstCanTranslateName(char *varname);
 
@@ -584,6 +587,21 @@ static void print_std_parms(
        fprintf(stdout, "%s %s %s %s %s %s %s %s %s %s %s %s %s %s  %s  %s\n",
            pre,v_nomv,v_typv,v_etiq,v_dims,v_dateo,v_stampo,v_datev,v_level,v_decoded,v_ip1,v_ip23,v_deet,v_npas,v_dty,v_grid);
     }
+}
+
+
+//! Find index position in master file table (fnom file table).
+//! \return Index of the provided unit number in the file table or -1 if not found.
+int fnom_index(
+    //! [in] Unit number associated to the file
+    const int iun
+) {
+    for (int i = 0; i < MAXFILES; i++) {
+        if (FGFDT[i].iun == iun) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 
@@ -2545,8 +2563,9 @@ int c_fstmsq(
 }
 
 
-//! Get the number of records of the file
-int c_fstnbr(
+//! \copydoc c_fstnbr
+//! XDF version
+int c_fstnbr_xdf(
     //! [in] Unit number associated to the file
     const int iun
 ) {
@@ -2570,6 +2589,37 @@ int c_fstnbr(
 
     fte = file_table[index];
     return fte->nrecords;
+}
+
+//! \copydoc c_fstnbr
+//! RSF version. Reads the entire directory. Is that costly?
+int c_fstnbr_rsf(
+    //! [in] Index given by fnom associated with the file
+    const int index_fnom
+) {
+    fprintf(stderr, "Please don't call me! (c_fstnbr_rsf)\n");
+    exit(-1);
+    return 1;
+}
+
+//! Get the number of records of the file
+int c_fstnbr(
+    //! [in] Unit number associated to the file
+    const int iun
+) {
+    const int index_fnom = fnom_index(iun);
+    if (index_fnom == -1) {
+        sprintf(errmsg, "file (unit=%d) is not connected with fnom", iun);
+        return error_msg("c_fstnbr", ERR_NO_FNOM, ERROR);
+    }
+
+    if (FGFDT[index_fnom].attr.rsf == 1) {
+        return c_fstnbr_rsf(index_fnom);
+        // return 1;
+    }
+    else {
+        return c_fstnbr_xdf(iun);
+    }
 }
 
 
@@ -2819,20 +2869,34 @@ int c_fstouv(
     FGFDT[i].attr.std = 1;
     if (FGFDT[i].attr.remote) {
         if ((FGFDT[i].eff_file_size == 0) && (! FGFDT[i].attr.old)) {
-            ier = c_xdfopn(iun, "CREATE", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
+            if ((strstr(options, "RSF")) || (strstr(options, "rsf"))) {
+                FGFDT[i].attr.rsf = 1;
+                printf("TODO: Open using RSF API\n");
+            }
+            else {
+                ier = c_xdfopn(iun, "CREATE", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
+            }
+
         } else {
             ier = c_xdfopn(iun, "R-W", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
         }
     } else {
         if (((iwko = c_wkoffit(FGFDT[i].file_name, strlen(FGFDT[i].file_name))) == -2) && (! FGFDT[i].attr.old)) {
-            ier = c_xdfopn(iun, "CREATE", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
+            if ((strstr(options, "RSF")) || (strstr(options, "rsf"))) {
+                FGFDT[i].attr.rsf = 1;
+                int32_t meta_dim = 1;
+                rsf_handles[i] = RSF_Open_file(FGFDT[i].file_name, RSF_RW, &meta_dim, appl, NULL);
+            }
+            else {
+                ier = c_xdfopn(iun, "CREATE", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
+            }
         } else {
             ier = c_xdfopn(iun, "R-W", (word_2 *) &stdfkeys, 16, (word_2 *) &stdf_info_keys, 2, appl);
         }
     }
 
     if (ier < 0) return ier;
-    nrec = c_fstnbr(iun);
+    nrec = FGFDT[i].attr.rsf == 1 ? 1 : c_fstnbr(iun);
     return nrec;
 }
 
