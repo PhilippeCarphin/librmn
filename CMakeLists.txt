@@ -152,7 +152,7 @@ if(OpenMP_FOUND)
       PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
       POSITION_INDEPENDENT_CODE ON
       OUTPUT_NAME rmn-ompi)
-   target_link_libraries(rmn-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran)
+   target_link_libraries(rmn-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran rsfiles)
    target_compile_definitions(rmn-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
 
    set_target_properties(rmnshared-ompi PROPERTIES
@@ -161,7 +161,7 @@ if(OpenMP_FOUND)
       POSITION_INDEPENDENT_CODE ON
       SOVERSION ${SOVERSION}
       OUTPUT_NAME rmn-ompi)
-   target_link_libraries(rmnshared-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran)
+   target_link_libraries(rmnshared-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran rsfiles)
    target_compile_definitions(rmnshared-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
 
    # Symbolic link for archive numbered version

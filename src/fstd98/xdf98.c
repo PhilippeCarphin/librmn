@@ -3076,22 +3076,6 @@ static int create_new_xdf(
    return 0;
 }
 
-//! Find position of file iun in file table.
-//! \return Index of the unit number in the file table or ERR_NO_FILE if not found
-int file_index(
-    //! [in] Unit number associated to the file
-    const int iun
-) {
-    for (int i = 0; i < MAX_XDF_FILES; i++) {
-        if (file_table[i] != NULL) {
-            if (file_table[i]->iun == iun) {
-                return i;
-            }
-        }
-    }
-    return ERR_NO_FILE;
-}
-
 
 //! Find a free position in file table and initialize file attributes.
 //! \return Free position index or error code

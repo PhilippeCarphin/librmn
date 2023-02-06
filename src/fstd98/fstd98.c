@@ -138,6 +138,23 @@ static void memcpy_32_16(short *p16, int *p32, int nbits, int nb) {
 }
 
 
+// //! Find position of file iun in file table.
+// //! \return Index of the unit number in the file table or ERR_NO_FILE if not found
+int file_index(
+    //! [in] Unit number associated to the file
+    const int iun
+) {
+    for (int i = 0; i < MAX_XDF_FILES; i++) {
+        if (file_table[i] != NULL) {
+            if (file_table[i]->iun == iun) {
+                return i;
+            }
+        }
+    }
+    return ERR_NO_FILE;
+}
+
+
 //! Reset to zeros ip1-2-3 tables and counters
 //! \return Always 0
 static int init_ip_vals()
@@ -604,6 +621,24 @@ int fnom_index(
     return -1;
 }
 
+//! Checks whether the given unit corresponds to an RSF file
+//! \return 1 if the unit is an RSF, 0 if not, something else if there was an error
+int is_rsf(
+    //! [in] Unit number associated to the file
+    const int iun,
+    //! [out] (Optional) The index given to this file by fnom
+    int* out_index_fnom
+) {
+    const int index_fnom = fnom_index(iun);
+    if (index_fnom == -1) {
+        Lib_Log(APP_LIBFST,APP_ERROR,"%s: file (unit=%d) is not connected with fnom\n",__func__,iun);
+        return(ERR_NO_FNOM);
+    }
+
+    if (out_index_fnom != NULL) *out_index_fnom = index_fnom;
+
+    return FGFDT[index_fnom].attr.rsf == 1 ? 1 : 0;
+}
 
 //! Position at the end of a sequential file for an append
 int c_fstapp(
@@ -2592,14 +2627,12 @@ int c_fstnbr_xdf(
 }
 
 //! \copydoc c_fstnbr
-//! RSF version. Reads the entire directory. Is that costly?
+//! RSF version
 int c_fstnbr_rsf(
     //! [in] Index given by fnom associated with the file
     const int index_fnom
 ) {
-    fprintf(stderr, "Please don't call me! (c_fstnbr_rsf)\n");
-    exit(-1);
-    return 1;
+    return RSF_Get_num_records(rsf_handles[index_fnom]);
 }
 
 //! Get the number of records of the file
@@ -2607,19 +2640,16 @@ int c_fstnbr(
     //! [in] Unit number associated to the file
     const int iun
 ) {
-    const int index_fnom = fnom_index(iun);
-    if (index_fnom == -1) {
-        sprintf(errmsg, "file (unit=%d) is not connected with fnom", iun);
-        return error_msg("c_fstnbr", ERR_NO_FNOM, ERROR);
-    }
-
-    if (FGFDT[index_fnom].attr.rsf == 1) {
+    int index_fnom;
+    const int rsf_status = is_rsf(iun, &index_fnom);
+    if (rsf_status == 1) {
         return c_fstnbr_rsf(index_fnom);
-        // return 1;
     }
-    else {
+    else if (rsf_status == 0) {
         return c_fstnbr_xdf(iun);
     }
+
+    return rsf_status;
 }
 
 
@@ -2896,7 +2926,7 @@ int c_fstouv(
     }
 
     if (ier < 0) return ier;
-    nrec = FGFDT[i].attr.rsf == 1 ? 1 : c_fstnbr(iun);
+    nrec = c_fstnbr(iun);
     return nrec;
 }
 
