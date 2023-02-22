@@ -35,8 +35,7 @@ set(PGI_FFLAGS -byteswapio)
 
 # This is required when using GNU compilers without OpenMP.
 # It has no adverse effect with other compilers and/or when OpenMP is enabled.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ldl -pthread")
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ldl -pthread")
+message(STATUS "CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -ldl -pthread")
 
 find_package(MPI)
