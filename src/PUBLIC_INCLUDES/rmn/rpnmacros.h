@@ -51,7 +51,16 @@ according to the compiler
 
 
 #ifdef __aarch64__
+#   ifndef Little_Endian
+        // Doesn't the CMake add this define?
+#       define Little_Endian
+#   endif
+
+#   ifdef __APPLE__
+#       define F2Cl const int64_t
+#   else
 #       error "Unknown arch/compiler combo!  Please edit rpnmacros.h to add the appropriate definitions!"
+#   endif
 #endif
 
 
