@@ -113,56 +113,55 @@ add_custom_target(WhiteBoardFortranHeader DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/in
 
 string(REGEX MATCH "([0-9]+)" SOVERSION ${PROJECT_VERSION})
 
-add_library(rmn STATIC ${PROJECT_C_FILES} ${PROJECT_F_FILES})
-set_target_properties(rmn PROPERTIES
+add_library(rmn-obj OBJECT ${PROJECT_C_FILES} ${PROJECT_F_FILES})
+set_target_properties(rmn-obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(rmn-obj PUBLIC App)
+target_compile_options(rmn-obj PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
+add_dependencies(rmn-obj rmn_build_info)
+
+add_library(rmn STATIC)
+target_link_libraries(rmn rmn-obj)
+
+add_library(rmnshared SHARED)
+target_link_libraries(rmnshared rmn-obj)
+
+set_target_properties(rmn rmnshared PROPERTIES
     VERSION ${PROJECT_VERSION}
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
     POSITION_INDEPENDENT_CODE ON
     OUTPUT_NAME rmn)
-target_compile_options(rmn PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
-target_link_libraries(rmn PUBLIC App)
 
-add_library(rmnshared SHARED ${PROJECT_C_FILES} ${PROJECT_F_FILES})
 set_target_properties(rmnshared PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
-    POSITION_INDEPENDENT_CODE ON
     SOVERSION ${SOVERSION}
     OUTPUT_NAME rmn)
-target_compile_options(rmnshared PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
-target_link_libraries(rmnshared PUBLIC App)
-
-# Required to prevent missing Fortran modules when building in parallel
-# (make -j) with GNU compilers
-add_dependencies(rmn App)
-add_dependencies(rmnshared rmn)
 
 set(TARGETS rmn rmnshared)
 
 if(OpenMP_FOUND)
+   add_library(rmn-obj-ompi OBJECT ${PROJECT_C_FILES} ${PROJECT_F_FILES})
+   target_link_libraries(rmn-obj-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran)
+   target_compile_options(rmn-obj-ompi PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
+   set_target_properties(rmn-obj-ompi PROPERTIES
+       POSITION_INDEPENDENT_CODE ON
+       Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/rmn-ompi
+   )
+
+   target_compile_definitions(rmn-obj-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
    set(TARGETS rmn rmnshared rmn-ompi rmnshared-ompi)
-   add_library(rmn-ompi STATIC ${PROJECT_C_FILES} ${PROJECT_F_FILES})
-   add_library(rmnshared-ompi SHARED ${PROJECT_C_FILES} ${PROJECT_F_FILES})
-   target_compile_options(rmn-ompi PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
-   target_compile_options(rmnshared-ompi PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
-   add_dependencies(rmnshared-ompi rmn-ompi)
+   add_library(rmn-ompi STATIC)
+   target_link_libraries(rmn-ompi PUBLIC rmn-obj-ompi)
+   add_library(rmnshared-ompi SHARED)
+   target_link_libraries(rmnshared-ompi PUBLIC rmn-obj-ompi)
 
    set_target_properties(rmn-ompi PROPERTIES
       VERSION ${PROJECT_VERSION}
       PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
-      POSITION_INDEPENDENT_CODE ON
       OUTPUT_NAME rmn-ompi)
-   target_link_libraries(rmn-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran)
-   target_compile_definitions(rmn-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
-
    set_target_properties(rmnshared-ompi PROPERTIES
       VERSION ${PROJECT_VERSION}
       PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
-      POSITION_INDEPENDENT_CODE ON
       SOVERSION ${SOVERSION}
       OUTPUT_NAME rmn-ompi)
-   target_link_libraries(rmnshared-ompi PUBLIC App-ompi OpenMP::OpenMP_C OpenMP::OpenMP_Fortran MPI::MPI_C MPI::MPI_Fortran)
-   target_compile_definitions(rmnshared-ompi PUBLIC HAVE_MPI HAVE_OPENMP)
 
    # Symbolic link for archive numbered version
    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
