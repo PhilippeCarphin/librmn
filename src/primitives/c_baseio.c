@@ -40,8 +40,14 @@
 #endif
 
 
-#ifdef __APPLE__ && __MACH__
-#   include <sys/limits.h>
+#if defined(__APPLE__) && defined(__MACH__)
+#   include <limits.h>
+#   define _LARGEFILE64_SOURCE     /* See feature_test_macros(7) */
+#   include <sys/types.h>
+#   include <unistd.h>
+typedef __darwin_off_t off64_t;
+#define lseek64 lseek
+#define open64 open
 #endif
 
 #include <fcntl.h>

@@ -49,6 +49,8 @@
 
 #ifdef __linux__
 #include <linux/limits.h>
+#elif defined(__APPLE__) && defined(__MACH__)
+# include <limits.h>
 #else
 #error "Unknown OS!  Don't known how to get PATH_MAX!"
 #endif

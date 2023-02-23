@@ -24,8 +24,8 @@
 #include <linux/limits.h>
 #endif
 
-#ifdef __APPLE__ && __MACH__
-#include <sys/limits.h>
+#if defined(__APPLE__) && defined(__MACH__)
+#include <limits.h>
 #endif
 
 #include <rmn/rpnmacros.h>
