@@ -119,6 +119,7 @@ set_target_properties(rmn PROPERTIES
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/PUBLIC_INCLUDES/rmn.h
     POSITION_INDEPENDENT_CODE ON
     OUTPUT_NAME rmn)
+target_compile_options(rmn PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
 target_link_libraries(rmn PUBLIC App)
 
 add_library(rmnshared SHARED ${PROJECT_C_FILES} ${PROJECT_F_FILES})
@@ -128,6 +129,7 @@ set_target_properties(rmnshared PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     SOVERSION ${SOVERSION}
     OUTPUT_NAME rmn)
+target_compile_options(rmnshared PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
 target_link_libraries(rmnshared PUBLIC App)
 
 # Required to prevent missing Fortran modules when building in parallel
@@ -141,7 +143,8 @@ if(OpenMP_FOUND)
    set(TARGETS rmn rmnshared rmn-ompi rmnshared-ompi)
    add_library(rmn-ompi STATIC ${PROJECT_C_FILES} ${PROJECT_F_FILES})
    add_library(rmnshared-ompi SHARED ${PROJECT_C_FILES} ${PROJECT_F_FILES})
-   add_dependencies(rmn-ompi App-ompi)
+   target_compile_options(rmn-ompi PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
+   target_compile_options(rmnshared-ompi PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>)
    add_dependencies(rmnshared-ompi rmn-ompi)
 
    set_target_properties(rmn-ompi PROPERTIES
