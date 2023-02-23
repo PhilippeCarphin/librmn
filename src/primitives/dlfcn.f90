@@ -14,6 +14,8 @@ FUNCTION C_F_STRING_CONVERT(CPTR) RESULT(FPTR)
         INTEGER(C_INT) :: len
         TYPE(C_PTR), VALUE :: string ! A C pointer
       END FUNCTION
+      SUBROUTINE register_dl_routines() BIND(C,NAME="register_dl_routines")
+      END SUBROUTINE
   END INTERFACE
 
   IF(C_ASSOCIATED(CPTR)) THEN
